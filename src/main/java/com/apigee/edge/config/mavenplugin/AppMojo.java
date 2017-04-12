@@ -30,6 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.apigee.edge.config.rest.RestUtil;
+import com.apigee.edge.config.utils.Crypto;
 import com.apigee.edge.config.utils.ServerProfile;
 import com.google.api.client.http.HttpResponse;
 import com.google.api.client.http.HttpResponseException;
@@ -59,6 +60,8 @@ public class AppMojo extends GatewayAbstractMojo
 	OPTIONS buildOption = OPTIONS.none;
 
 	private ServerProfile serverProfile;
+	
+	private String encryptPwd;
 
     public static class App {
         @Key
@@ -96,7 +99,7 @@ public class AppMojo extends GatewayAbstractMojo
 
 			String options="";
 			serverProfile = super.getProfile();			
-	
+			encryptPwd = super.getEncryptPwd();
 			options = super.getOptions();
 			if (options != null) {
 				buildOption = OPTIONS.valueOf(options);
@@ -134,7 +137,7 @@ public class AppMojo extends GatewayAbstractMojo
 	}
 
 	private static void deleteAppKeys(ServerProfile profile, String developerId, App appObj, String responseStr)
-			throws IOException, MojoFailureException {
+			throws IOException, MojoFailureException, Exception {
 
 		DevAppResponse devAppResponseObj = null;
 		devAppResponseObj = getDevAppResponseObj(responseStr);
@@ -148,7 +151,7 @@ public class AppMojo extends GatewayAbstractMojo
 	}
 	
 	protected void doUpdate(Map<String, List<String>> devApps) 
-            throws MojoFailureException {
+            throws Exception {
 		try {
 			List existingApps = null;
 			if (buildOption != OPTIONS.update && 
@@ -179,7 +182,7 @@ public class AppMojo extends GatewayAbstractMojo
                                                         "\" exists. Updating.");
                                 
                                 updateApp(serverProfile, developerId,
-                                                        appName, app, appObj);
+                                                        appName, app, appObj, encryptPwd);
                                 break;
                             case create:
                                 logger.info("App \"" + appName + 
@@ -195,7 +198,7 @@ public class AppMojo extends GatewayAbstractMojo
                                                 "\" already exists. Deleting and recreating.");
                                 deleteApp(serverProfile, developerId, appName);
                                 logger.info("Creating App - " + appName);
-                                createApp(serverProfile, developerId, app, appObj);
+                                createApp(serverProfile, developerId, app, appObj, encryptPwd);
                                 break;
                         }
     	        	} else {
@@ -204,7 +207,7 @@ public class AppMojo extends GatewayAbstractMojo
                             case sync:
                             case update:
                                 logger.info("Creating App - " + appName);
-                                createApp(serverProfile, developerId, app, appObj);
+                                createApp(serverProfile, developerId, app, appObj, encryptPwd);
                                 break;
                             case delete:
                                 logger.info("App \"" + appName + 
@@ -263,6 +266,9 @@ public class AppMojo extends GatewayAbstractMojo
 		} catch (RuntimeException e) {
 			throw e;
 		}
+		catch (Exception e) {
+			logger.error(e.getMessage());
+		}
 	}
 
     /***************************************************************************
@@ -271,8 +277,9 @@ public class AppMojo extends GatewayAbstractMojo
     public static String createApp(ServerProfile profile, 
                                     String developerId,
                                     String app,
-                                    App appObj)
-            throws IOException, MojoFailureException {
+                                    App appObj,
+                                    String encryptPwd)
+            throws IOException, MojoFailureException, Exception {
 
         HttpResponse response = RestUtil.createOrgConfig(profile, 
                                         "developers/" + developerId + "/apps",
@@ -294,11 +301,13 @@ public class AppMojo extends GatewayAbstractMojo
         	//Add API Products to Key
         	//Delete the Key that was generated while creating the app so that only one key is available for the dev app
         if(appObj!=null && appObj.consumerKey!=null && appObj.consumerSecret!=null){
+        	if(encryptPwd==null || encryptPwd ==""){
+        		throw new MojoFailureException("Please provide the password to decrypt the data - encryptPwd option");
+        	}
         	logger.info("Create Consumer Key and Secret");
-        	createConsumerKeySecret(profile, developerId, appObj);
+        	createConsumerKeySecret(profile, developerId, appObj, encryptPwd);
         	logger.info("Add API Product to Key");
-        	addAPIProductToKey(profile, developerId, appObj);
-        	logger.info("Delete API Product to Generated Key");
+        	addAPIProductToKey(profile, developerId, appObj, encryptPwd);
         	logger.info("Delete Existing API Keys");
 	    	deleteAppKeys(profile, developerId, appObj, responseStr);
         }
@@ -310,8 +319,9 @@ public class AppMojo extends GatewayAbstractMojo
                                     String developerId, 
                                     String appName, 
                                     String app,
-                                    App appObj)
-            throws IOException, MojoFailureException {
+                                    App appObj,
+                                    String encryptPwd)
+            throws IOException, MojoFailureException, Exception {
 
     	HttpResponse response = null;
         String responseStr = null;
@@ -346,17 +356,22 @@ public class AppMojo extends GatewayAbstractMojo
         	//Add API Products to Key
             //Delete the generated key
     	    if(appObj!=null && appObj.consumerKey!=null && appObj.consumerSecret!=null){
+    	    	if(encryptPwd==null || encryptPwd ==""){
+            		throw new MojoFailureException("Please provide the password to decrypt the data - encryptPwd option");
+            	}
     	    	logger.info("Create Consumer Key and Secret");
-    	    	createConsumerKeySecret(profile, developerId, appObj);
+    	    	createConsumerKeySecret(profile, developerId, appObj, encryptPwd);
     	    	logger.info("Add API Product to Key");
-    	    	addAPIProductToKey(profile, developerId, appObj);
+    	    	addAPIProductToKey(profile, developerId, appObj,encryptPwd);
     	    	logger.info("Delete Existing API Keys");
     	    	deleteAppKeys(profile, developerId, appObj, responseStr);
     	    }
         } catch (HttpResponseException e) {
             logger.error("App update error " + e.getMessage());
             throw new IOException(e.getMessage());
-        }
+        } catch (Exception e) {
+			logger.error(e.getMessage());
+		}
 
         return "";
     }
@@ -384,11 +399,11 @@ public class AppMojo extends GatewayAbstractMojo
         return "";
     }
     
-    public static String createConsumerKeySecret(ServerProfile profile, String developerId, App appObj) throws IOException {
+    public static String createConsumerKeySecret(ServerProfile profile, String developerId, App appObj, String encryptPwd) throws Exception {
 
 		String payload = "{"+
-				  "\"consumerKey\": \""+appObj.consumerKey+"\","+
-				  "\"consumerSecret\": \""+appObj.consumerSecret+"\""+
+				  "\"consumerKey\": \""+Crypto.decryptString(encryptPwd, appObj.consumerKey)+"\","+
+				  "\"consumerSecret\": \""+Crypto.decryptString(encryptPwd, appObj.consumerSecret)+"\""+
 				  "}";
 		HttpResponse response = RestUtil.createOrgConfig(profile, "developers/" + developerId + "/apps/"+ appObj.name+"/keys/create", payload);
 		try {
@@ -405,28 +420,31 @@ public class AppMojo extends GatewayAbstractMojo
 		return "";
 	}
 	
-	public static String addAPIProductToKey(ServerProfile profile, String developerId, App appObj) throws IOException {
+	public static String addAPIProductToKey(ServerProfile profile, String developerId, App appObj, String encryptPwd) throws IOException, Exception {
 
-		String payload = "{"+
+		if(appObj!=null && appObj.apiProducts!=null && appObj.apiProducts.size()>0){
+			String payload = "{"+
 				  	"\"apiProducts\":"+new Gson().toJson(appObj.apiProducts)+
 				  "}";
-		HttpResponse response = RestUtil.createOrgConfig(profile, "developers/" + developerId + "/apps/"+ appObj.name+"/keys/"+appObj.consumerKey, payload);
-		try {
-
-			logger.info("Response " + response.getContentType() + "\n" + response.parseAsString());
-			if (response.isSuccessStatusCode())
-				logger.info("Create Success.");
-
-		} catch (HttpResponseException e) {
-			logger.error("Add API Product to Key error " + e.getMessage());
-			throw new IOException(e.getMessage());
+			//TODO
+			HttpResponse response = RestUtil.createOrgConfig(profile, "developers/" + developerId + "/apps/"+ appObj.name+"/keys/"+Crypto.decryptString(encryptPwd, appObj.consumerKey), payload);
+			try {
+	
+				logger.info("Response " + response.getContentType() + "\n" + response.parseAsString());
+				if (response.isSuccessStatusCode())
+					logger.info("Create Success.");
+	
+			} catch (HttpResponseException e) {
+				logger.error("Add API Product to Key error " + e.getMessage());
+				throw new IOException(e.getMessage());
+			}
 		}
-
 		return "";
 	}
     
-    public static String deleteAPIProductToKey(ServerProfile profile, String developerId, App appObj, String consumerKey) throws IOException {
-		HttpResponse response = RestUtil.deleteOrgConfig(profile, "developers/" + developerId + "/apps/"+ appObj.name+"/keys", consumerKey);
+    public static String deleteAPIProductToKey(ServerProfile profile, String developerId, App appObj, String consumerKey) throws IOException, Exception {
+		//TODO
+    	HttpResponse response = RestUtil.deleteOrgConfig(profile, "developers/" + developerId + "/apps/"+ appObj.name+"/keys", consumerKey);
 		try {
 
 			logger.info("Response " + response.getContentType() + "\n" + response.parseAsString());

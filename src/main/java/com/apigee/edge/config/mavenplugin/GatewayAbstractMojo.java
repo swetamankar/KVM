@@ -140,6 +140,20 @@ public abstract class GatewayAbstractMojo extends AbstractMojo {
  	 */
 	private String configDir;
 	// TODO set resources/edge as default value
+	
+	/**
+	 * Data to be encrypted
+	 * 
+	 * @parameter property="encryptData"
+	 */
+	private String encryptData;
+	
+	/**
+	 * password for encryption
+	 * 
+	 * @parameter property="encryptPwd"
+	 */
+	private String encryptPwd;
 
 	/**
 	* Skip running this plugin.
@@ -221,7 +235,22 @@ public abstract class GatewayAbstractMojo extends AbstractMojo {
 	public boolean isSkip() {
 		return skip;
 	}
-
+	
+	public String getEncryptData() {
+		return encryptData;
+	}
+	
+	public void setEncryptData(String encryptData) {
+		this.encryptData = encryptData;
+	}
+	
+	public String getEncryptPwd() {
+		return encryptPwd;
+	}
+	
+	public void setEncryptPwd(String encryptPwd) {
+		this.encryptPwd = encryptPwd;
+	}
 
 	public void setSkip(boolean skip) {
 		this.skip = skip;

@@ -14,7 +14,7 @@ This is the plugin source code project. Refer to samples folder for plugin usage
 
 ## Plugin Usage
 ```
-mvn install -Ptest -Dapigee.config.options=create
+mvn install -Ptest -Dapigee.config.options=create -DencryptPwd=<your-encryption-password>
 
   # Options
 
@@ -32,9 +32,12 @@ mvn install -Ptest -Dapigee.config.options=create
   -Dapigee.config.dir=<dir>
      dir containing individual json files.
 
+  -DencryptPwd=<your-encryption-password>
+     password that is used to encrypt and decrypt the consumer credentials. This is required only if you want to setup specifi client credentials in your developer apps configurations
+
   # Individual goals
   You can also work with individual config class using goals directly. The available goals are,
-  apiproducts 
+  apiproducts
   developerapps
   caches
   developers
@@ -63,9 +66,11 @@ To use, edit samples/EdgeConfig/shared-pom.xml, and update org and env elements 
       <apigee.org>myorg</apigee.org>
       <apigee.env>test</apigee.env>
 
-To run jump to samples project `cd /samples/EdgeConfig` and run 
+To run jump to samples project `cd /samples/EdgeConfig` and run
 
-`mvn install -Ptest -Dusername=<your-apigee-username> -Dpassword=<your-apigee-password> -Dapigee.config.options=create`
+`mvn install -Ptest -Dusername=<your-apigee-username> -Dpassword=<your-apigee-password> -Dapigee.config.options=create -DencryptPwd=pwd`
+
+**NOTE: All the encrypted client credentials used in the sample was encrypted using `-DencryptPwd=pwd`**
 
 Refer to [samples/APIandConfig/HelloWorld](https://github.com/apigee/apigee-config-maven-plugin/tree/master/samples/APIandConfig/HelloWorld) for config management alongwith API deployment using [apigee-deploy-maven-plugin](https://github.com/apigee/apigee-deploy-maven-plugin). More info at [samples/README.md](https://github.com/apigee/apigee-config-maven-plugin/blob/master/samples/README.md)
 
@@ -84,7 +89,7 @@ For example, API product is an orgConfig whereas Cache is an envConfig. The envC
    ```
 The environment name is intended to be the same as the profile name in pom.xml (parent-pom.xml or shared-pom.xml).
 
-The final level is the config entities. 
+The final level is the config entities.
    ```
      orgConfig.apiProducts[]
      orgConfig.developers[]
@@ -126,5 +131,4 @@ Please send feature requests using [issues](https://github.com/apigee/apigee-con
 * Create an [issue](https://github.com/apigee/apigee-config-maven-plugin/issues/new)
 
 ## Credits
-Madhan Sadasivam, Prashanth K S, Meghdeep Basu
-
+Madhan Sadasivam, Prashanth K S, Meghdeep Basu, Sai Saran Vaidyanathan
