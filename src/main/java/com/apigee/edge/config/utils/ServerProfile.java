@@ -28,6 +28,7 @@ public class ServerProfile {
 	private String bundle_zip_full_path;
 	private String profileId; //Profile id as in parent pom
 	private String options;
+	private Boolean cpsEnabled;
 	
 	private String tokenURL; // Mgmt API OAuth token endpoint
 	private String mfaToken; // Mgmt API OAuth MFA - TOTP
@@ -189,6 +190,18 @@ public class ServerProfile {
 
 	public void setOptions(String options) {
 		this.options = options;
+	}
+
+	/**
+	 * @param cpsEnabled is CPS org
+	 */
+	
+	public Boolean isCpsEnabled() {
+		return cpsEnabled;
+	}
+
+	public void setCpsEnabled(Boolean cpsEnabled) {
+		this.cpsEnabled = cpsEnabled;
 	}
 
 }

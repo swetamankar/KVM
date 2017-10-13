@@ -73,6 +73,15 @@ public class KVMMojo extends GatewayAbstractMojo
     public static class KVM {
         @Key
         public String name;
+        @Key
+        public KVMEntry[] entry;
+    }
+
+    public static class KVMEntry {
+        @Key
+        public String name;        
+        @Key
+        public String value;        
     }
 	
 	public KVMMojo() {
@@ -86,10 +95,12 @@ public class KVMMojo extends GatewayAbstractMojo
 			logger.info(____ATTENTION_MARKER____);
 			logger.info("Apigee KVM");
 			logger.info(____ATTENTION_MARKER____);
+            logger.info("CPS enabled: " + isCpsEnabled());
 
 			String options="";
-			serverProfile = super.getProfile();			
-	
+			serverProfile = super.getProfile();
+            super.isCpsEnabled(); // updates serverProfile object too
+
 			options = super.getOptions();
 			if (options != null) {
 				buildOption = OPTIONS.valueOf(options);

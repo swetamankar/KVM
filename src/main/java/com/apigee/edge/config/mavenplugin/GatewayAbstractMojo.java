@@ -27,10 +27,25 @@ import com.apigee.edge.config.utils.ConfigReader;
 import com.apigee.edge.config.utils.ConsolidatedConfigReader;
 import org.apache.maven.plugin.AbstractMojo;
 
-import org.apache.maven.plugin.MojoExecutionException;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.io.IOException;
+import com.google.api.client.http.*;
+import com.apigee.edge.config.rest.RestUtil;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.apache.maven.plugin.MojoFailureException;
 
 public abstract class GatewayAbstractMojo extends AbstractMojo {
+
+	static Logger logger = LoggerFactory.getLogger(GatewayAbstractMojo.class);
 
 	/**
 	 * Directory containing the build files.
@@ -181,6 +196,13 @@ public abstract class GatewayAbstractMojo extends AbstractMojo {
 	 * @parameter expression="${apigee.refresh}"
 	 */
 	private String refresh;
+
+	/**
+	 * Gateway options
+	 * 
+	 * @parameter property="apigee.cpsEnabled"
+	 */
+	private Boolean cpsEnabled;
 	
 	/**
 	 * Gateway OAuth clientId
@@ -221,7 +243,8 @@ public abstract class GatewayAbstractMojo extends AbstractMojo {
 		
 	}
 
-	public ServerProfile getProfile() {
+	public ServerProfile getProfile() 
+			throws MojoFailureException {
 		this.buildProfile = new ServerProfile();
 		this.buildProfile.setOrg(this.orgName);
 		this.buildProfile.setApplication(this.projectName);
@@ -239,6 +262,7 @@ public abstract class GatewayAbstractMojo extends AbstractMojo {
 		this.buildProfile.setRefreshToken(this.refresh);
 		this.buildProfile.setClientId(this.clientid);
 		this.buildProfile.setClientSecret(this.clientsecret);
+		this.buildProfile.setCpsEnabled(this.cpsEnabled);
 		return buildProfile;
 	}
 
@@ -274,6 +298,33 @@ public abstract class GatewayAbstractMojo extends AbstractMojo {
 		this.options = options;
 	}
 
+	/** lazy query of org features 
+	  * updates org features config when invoked */
+	public Boolean isCpsEnabled() throws MojoFailureException {
+		if (this.cpsEnabled == null) {
+			try {
+				HashMap<String,String> features = queryOrgFeatures(this.buildProfile);
+				if (features != null && 
+					features.get("features.isCpsEnabled") != null &&
+					features.get("features.isCpsEnabled").equals("true")) {
+					this.cpsEnabled = new Boolean(true);
+				} else {
+					this.cpsEnabled = new Boolean(false);
+				}
+				this.buildProfile.setCpsEnabled(this.cpsEnabled);
+			} catch (Exception e) {
+				throw new MojoFailureException(
+					"Error finding org features. Check if user can access /organizations");
+			}
+		}
+
+		return this.cpsEnabled;
+	}
+
+	public void setCpsEnabled(Boolean cpsEnabled) {
+		this.cpsEnabled = cpsEnabled;
+	}
+	
 	/**
 	 * @return the id
 	 */
@@ -515,4 +566,41 @@ public abstract class GatewayAbstractMojo extends AbstractMojo {
 		}
 	}
 
+	private HashMap<String,String> queryOrgFeatures(ServerProfile profile)
+            throws IOException {
+
+        HttpResponse response = RestUtil.getOrgConfig(profile, "");
+        try {
+            logger.debug("output " + response.getContentType());
+            // response can be read only once
+            String payload = response.parseAsString();
+            logger.debug(payload);
+
+            JSONParser parser = new JSONParser();                
+            JSONObject jsonPayload = (JSONObject)parser.parse(payload);
+            JSONObject properties = (JSONObject)jsonPayload.get("properties");
+            if (properties == null) return null;
+
+            JSONArray property  = (JSONArray)properties.get("property");
+            if (property == null) return null;
+
+            HashMap<String,String> out = new HashMap<String,String>(); 
+            for (Object obj: property) {
+            	JSONObject feature = (JSONObject)obj;
+            	String name = (String)feature.get("name");
+            	String value = (String)feature.get("value");
+            	if (name != null) {
+            		out.put(name, value);
+            	}
+            }
+            return out;
+
+        } catch (ParseException pe){
+            logger.error("Org properties check error " + pe.getMessage());
+            throw new IOException(pe.getMessage());
+        } catch (HttpResponseException e) {
+            logger.error("Org properties check error " + e.getMessage());
+            throw new IOException(e.getMessage());
+        }
+    }   	
 }
