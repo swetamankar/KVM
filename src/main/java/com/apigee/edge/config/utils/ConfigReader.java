@@ -181,11 +181,6 @@ public class ConfigReader {
 
         Set<String> out = new HashSet<String>();
         File[] files = new File(apiConfigDir).listFiles();
-
-        if(files == null){
-           return null;
-        }
-
         for (File file : files) {
             if (file.isDirectory()) {
                 out.add(file.getName());
