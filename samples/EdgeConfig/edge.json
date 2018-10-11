@@ -6,7 +6,7 @@
                 "kvms": [
                 {
                     "name": "backend_account_config_Test1",
-					"encrypted":true,
+					"encrypted":false,
                     "entry": [
                         {
                             "name": "COMPANY",
