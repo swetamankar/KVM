@@ -85,8 +85,9 @@
         <profile>
             <id>test</id>
             <properties>
+			    <org>swetamankar-eval</org>
                 <apigee.profile>test</apigee.profile>
-                <apigee.hosturl>https://api.enterprise.apigee.com</apigee.hosturl>
+                <apigee.hosturl>https://swetamankar-eval-test.apigee.net</apigee.hosturl>
                 <apigee.apiversion>v1</apigee.apiversion>
                 <apigee.org>${org}</apigee.org>
                 <apigee.env>${env}</apigee.env>
