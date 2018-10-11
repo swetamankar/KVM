@@ -301,31 +301,6 @@
                     </executions>
                 </plugin>
 		    <plugin>
-  <groupId>com.google.code.maven-replacer-plugin</groupId>
-  <artifactId>replacer</artifactId>
-  <version>1.5.2</version>
-  <executions>
-    <execution>
-      <phase>process-resources</phase>
-      <goals>
-        <goal>replace</goal>
-      </goals>
-    </execution>
-  </executions>
-  <configuration>
-    <basedir>${project.root.dir}</basedir> <!--Source directory-->
-    <includes>
-      <include>edge.json</include> <!--path to the edge.json -->
-    </includes>
-    <replacements>
-      <replacement>
-        <token>dummy</token> <!--Put a dummy token in your edge.json -->
-        <value>${secretValue}</value> <!--Value passed as argument -->
-      </replacement>
-    </replacements>
-  </configuration>
-</plugin>
-		    <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-gpg-plugin</artifactId>
                     <version>1.4</version>
