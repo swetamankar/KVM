@@ -9,12 +9,12 @@
 					"encrypted":true,
                     "entry": [
                         {
-                            "name": "COMPANY",
-                            "value": "example.com"
+                            "name": "COMPANY1",
+                            "value": "Sweta"
                         },
                         {
-                            "name": "PREFIX",
-                            "value": "EXMPL"
+                            "name": "PREFIX2",
+                            "value": "Mankar"
                         },
                     ]
                 }
